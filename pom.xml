@@ -8,10 +8,12 @@
     <packaging>jar</packaging>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <xslt.target-package-name>br.ufes.inf.nemo.protege.annotations</xslt.target-package-name>
+        <xslt.generated-sources>${project.build.directory}/generated-sources/xslt</xslt.generated-sources>
         <protege.sources.connectionUrl>scm:git:https://github.com/protegeproject/protege.git</protege.sources.connectionUrl>
         <protege.sources.targetDir>${project.build.directory}/protege-sources</protege.sources.targetDir>
+        <maven.compiler.source>7</maven.compiler.source>
+        <maven.compiler.target>7</maven.compiler.target>
     </properties>
     <build>
         <plugins>
@@ -37,11 +39,32 @@
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <id>folder-from-package-name</id>
+                        <goals>
+                            <goal>regex-property</goal>
+                        </goals>
+                        <configuration>
+                            <name>xslt.target-package-folder</name>
+                            <value>${xslt.target-package-name}</value>
+                            <regex>\.</regex>
+                            <replacement>/</replacement>
+                            <failIfNoMatch>true</failIfNoMatch>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
                 <artifactId>xml-maven-plugin</artifactId>
                 <version>1.0.2</version>
                 <executions>
                     <execution>
-                        <phase>generate-sources</phase>                            
+                        <id>transform-exsd</id>
+                        <phase>generate-sources</phase>
                         <goals>
                             <goal>transform</goal>
                         </goals>
@@ -52,12 +75,18 @@
                         <transformationSet>
                             <dir>${protege.sources.targetDir}</dir>
                             <stylesheet>src/main/xsl/annotation.xsl</stylesheet>
-                            <outputDir>${project.build.directory}/generated-sources/xslt</outputDir>
-                            
+                            <outputDir>${xslt.generated-sources}</outputDir>
+                            <addedToClasspath>false</addedToClasspath>
+                            <parameters>
+                                <parameter>
+                                    <name>package-name</name>
+                                    <value>${xslt.target-package-name}</value>
+                                </parameter>
+                            </parameters>
                             <fileMappers>
                                 <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.RegExpFileMapper">
                                     <pattern>protege-editor-.*/schema</pattern>
-                                    <replacement>br/ufes/inf/nemo/protege/annotations</replacement>                                        
+                                    <replacement>${xslt.target-package-folder}</replacement>
                                 </fileMapper>
                                 <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
                                     <targetExtension>.java</targetExtension>
@@ -73,14 +102,14 @@
                 <version>3.0.0</version>
                 <executions>
                     <execution>
-                        <id>add-source</id>
+                        <id>add-transformed-exsd</id>
                         <phase>generate-sources</phase>
                         <goals>
                             <goal>add-source</goal>
                         </goals>
                         <configuration>
                             <sources>
-                                <source>${project.build.directory}/generated-sources/xslt</source>
+                                <source>${xslt.generated-sources}</source>
                             </sources>
                         </configuration>
                     </execution>
