@@ -39,26 +39,6 @@
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>1.8</version>
-                <executions>
-                    <execution>
-                        <id>folder-from-package-name</id>
-                        <goals>
-                            <goal>regex-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>xslt.target-package-folder</name>
-                            <value>${xslt.target-package-name}</value>
-                            <regex>\.</regex>
-                            <replacement>/</replacement>
-                            <failIfNoMatch>true</failIfNoMatch>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
                 <artifactId>xml-maven-plugin</artifactId>
                 <version>1.0.2</version>
                 <executions>
@@ -101,6 +81,19 @@
                 <artifactId>build-helper-maven-plugin</artifactId>
                 <version>3.0.0</version>
                 <executions>
+                    <execution>
+                        <id>folder-from-package-name</id>
+                        <goals>
+                            <goal>regex-property</goal>
+                        </goals>
+                        <configuration>
+                            <name>xslt.target-package-folder</name>
+                            <value>${xslt.target-package-name}</value>
+                            <regex>\.</regex>
+                            <replacement>/</replacement>
+                            <failIfNoMatch>true</failIfNoMatch>
+                        </configuration>
+                    </execution>
                     <execution>
                         <id>add-transformed-exsd</id>
                         <phase>generate-sources</phase>
