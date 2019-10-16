@@ -80,7 +80,7 @@
                         </goals>
                         <configuration>
                             <sources>
-                                <source>>${project.build.directory}/generated-sources/xslt</source>
+                                <source>${project.build.directory}/generated-sources/xslt</source>
                             </sources>
                         </configuration>
                     </execution>
