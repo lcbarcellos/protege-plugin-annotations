@@ -78,10 +78,17 @@
                             <xsl:value-of select="/xsd:schema/xsd:annotation/xsd:appInfo/xsd:meta.schema/@id"/>
                         </xsl:attribute>
                     </xsl:when>
+                    <xsl:when test="../../@name='class' and @name='value'">
+                    </xsl:when>
                     <xsl:otherwise>
                         <xsl:attribute name="{@name}">
-                            <xsl:value-of select="concat(@type, ':', @use)"/>
+                            <xsl:value-of select="concat(@type)"/>
                         </xsl:attribute>
+                        <xsl:for-each select="@use">
+                            <xsl:attribute name="x-use">
+                                <xsl:value-of select="."/>
+                            </xsl:attribute>
+                        </xsl:for-each>
                     </xsl:otherwise>
                 </xsl:choose>
 
@@ -166,6 +173,48 @@
         <xsl:text>path="</xsl:text>
         <xsl:apply-templates select="ancestor-or-self::*" mode="dump-path"/>
         <xsl:text>"</xsl:text>
+        <xsl:for-each select="@value">
+            <xsl:text>, fieldName="</xsl:text>
+            <xsl:value-of select="name(..)"/>
+            <xsl:text>"</xsl:text>
+        </xsl:for-each>
+        <xsl:for-each select="@*[not(starts-with(name(), 'x-'))]">
+            <xsl:choose>
+                <xsl:when test="position() = 1">
+                    <xsl:text>, attributes={</xsl:text>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:text>, </xsl:text>
+                </xsl:otherwise>
+            </xsl:choose>
+            <xsl:text>@Attribute(name="</xsl:text>
+            <xsl:choose>
+                <xsl:when test="starts-with(name(), 'c-')">
+                    <xsl:value-of select="substring(name(), 3)"/>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:value-of select="name()"/>
+                </xsl:otherwise>
+            </xsl:choose>
+            <xsl:text>", value="</xsl:text>
+            <xsl:choose>
+                <xsl:when test="starts-with(name(), 'c-')">
+                    <xsl:value-of select="."/>
+                </xsl:when>
+                <xsl:when test="name() = 'value'">
+                    <xsl:text>@</xsl:text>
+                    <xsl:value-of select="name(..)"/>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:text>@</xsl:text>
+                    <xsl:value-of select="name()"/>
+                </xsl:otherwise>
+            </xsl:choose>
+            <xsl:text>")</xsl:text>
+            <xsl:if test="position() = last()">
+                <xsl:text>}</xsl:text>
+            </xsl:if>
+        </xsl:for-each>
         <xsl:text>)</xsl:text>
     </xsl:template>
 
