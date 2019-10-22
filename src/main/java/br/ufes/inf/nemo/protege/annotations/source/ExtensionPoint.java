@@ -15,7 +15,7 @@ import java.lang.annotation.Target;
  * @author luciano
  */
 @Target(ElementType.ANNOTATION_TYPE)
-@Retention(RetentionPolicy.SOURCE)
+@Retention(RetentionPolicy.CLASS)
 public @interface ExtensionPoint {
     Class<?> superClass();
     Element[] xmlStructure();
