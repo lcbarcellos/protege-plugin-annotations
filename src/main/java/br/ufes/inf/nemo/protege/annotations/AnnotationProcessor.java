@@ -178,6 +178,10 @@ public class AnnotationProcessor extends AbstractProcessor {
             RoundEnvironment re) throws IOException {
         List<? extends AnnotationMirror> annotationMirrors
                 = annotatedElement.getAnnotationMirrors();
+        printIndent(0);
+        out.print("<!-- Element automatically generated for ");
+        out.print(annotatedElement.toString());
+        out.println(" -->");
         for (AnnotationMirror annotationValue : annotationMirrors) {
             final Element annotationType
                     = annotationValue.getAnnotationType().asElement();
