@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?eclipse version="3.0"?>
+
+<!--
+    See  https://protegewiki.stanford.edu/wiki/PluginAnatomy
+-->
+<plugin name="Test" version="1.0.0">
+    <!--
+        Tab component. The following tab is just a default layout of views,
+        defined by file tab.layout.xml
+
+        @id: unique id of extension
+        label/@value: label to be shown in tab's header
+        class/@value: full name of class implementing tab (using
+            protégé's internal class))
+        index/@value: ?
+        editorKitId/@value: ?
+        defaultViewConfigFileName/@value: File containing default tab layout
+    -->
+    <extension id="ufopp.tab"
+               point="org.protege.editor.core.application.WorkspaceTab">
+        <label value="Test"/>
+        <class value="org.protege.editor.owl.ui.OWLWorkspaceViewsTab"/>
+        <index value="X"/>
+        <editorKitId value="OWLEditorKit"/>
+        <defaultViewConfigFileName value="tab.layout.xml"/>
+    </extension>
+</plugin>

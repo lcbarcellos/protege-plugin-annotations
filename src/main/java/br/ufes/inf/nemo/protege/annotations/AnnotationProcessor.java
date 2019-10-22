@@ -8,7 +8,13 @@ package br.ufes.inf.nemo.protege.annotations;
 import br.ufes.inf.nemo.protege.annotations.source.Attribute;
 import br.ufes.inf.nemo.protege.annotations.source.ExtensionPoint;
 import com.google.auto.service.AutoService;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,9 +38,17 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-import static javax.tools.Diagnostic.Kind.NOTE;
-import javax.tools.FileObject;
-import javax.tools.StandardLocation;
+import static javax.tools.StandardLocation.CLASS_OUTPUT;
+import static javax.tools.StandardLocation.CLASS_PATH;
+import javax.xml.transform.Result;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.URIResolver;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
+import org.codehaus.plexus.util.IOUtil;
 
 /**
  *
@@ -51,8 +65,17 @@ public class AnnotationProcessor extends AbstractProcessor {
 
     private List<String> tagStack = new ArrayList<>(10);
     private boolean lastItemIsEmpty = false;
+    private PrintWriter out;
+    private ByteArrayOutputStream tempPluginXML;
+    private boolean closed;
 
-    private void closeTags(int i, PrintWriter out) {
+    private void printIndent(int i) {
+        for (int k = 0; k <= i; k++) {
+            out.print("    ");
+        }
+    }
+
+    private void closeTags(int i) {
         for (int j = tagStack.size() - 1; j >= i; j--) {
             final String tagName = tagStack.remove(j);
             if (lastItemIsEmpty) {
@@ -60,9 +83,7 @@ public class AnnotationProcessor extends AbstractProcessor {
                 lastItemIsEmpty = false;
 
             } else {
-                for (int k = 0; k < j; k++) {
-                    out.print("    ");
-                }
+                printIndent(j);
                 out.print("</");
                 out.print(tagName);
                 out.print(">");
@@ -72,11 +93,12 @@ public class AnnotationProcessor extends AbstractProcessor {
         }
     }
 
-    private void processAnnotation(
-            ExtensionPoint extensionPoint, Map<String, String> attributeValues,
-            PrintWriter out) {
+    private void processAnnotation(ExtensionPoint extensionPoint,
+            Map<String, String> attributeValues) {
 
-        for (br.ufes.inf.nemo.protege.annotations.source.Element element : extensionPoint.xmlStructure()) {
+        for (br.ufes.inf.nemo.protege.annotations.source.Element element
+                : extensionPoint.xmlStructure()) {
+
             String fieldName = element.fieldName();
             if (!"".equals(fieldName)) {
                 if (!attributeValues.containsKey(fieldName)) {
@@ -96,7 +118,7 @@ public class AnnotationProcessor extends AbstractProcessor {
                 }
             }
             // Close previous tags
-            closeTags(i, out);
+            closeTags(i);
             // Open relevant tags
             for (int j = i; j < path.length; j++) {
                 if (lastItemIsEmpty) {
@@ -104,9 +126,7 @@ public class AnnotationProcessor extends AbstractProcessor {
                     lastItemIsEmpty = false;
                 }
                 tagStack.add(path[j]);
-                for (int k = 0; k < j; k++) {
-                    out.print("    ");
-                }
+                printIndent(j);
                 out.print("<");
                 out.print(path[j]);
                 if (j < path.length - 1) {
@@ -132,7 +152,7 @@ public class AnnotationProcessor extends AbstractProcessor {
             }
             lastItemIsEmpty = true;
         }
-        closeTags(0, out);
+        closeTags(0);
     }
 
     private void processAnnotatedValue(
@@ -141,28 +161,21 @@ public class AnnotationProcessor extends AbstractProcessor {
             ExtensionPoint extensionPointDef,
             RoundEnvironment re) throws IOException {
         final Map<String, String> attributeValues = new HashMap();
-        FileObject filer = processingEnv.getFiler().createResource(
-                StandardLocation.CLASS_OUTPUT,
-                "", "plugin.xml");
-        try (PrintWriter out = new PrintWriter(filer.openWriter())) {
-
-            Map<? extends ExecutableElement, ? extends AnnotationValue> values
-                    = annotationValue.getElementValues();
-            ValueConverter converter = new ValueConverter();
-            attributeValues.put("class", annotatedElement.asType().toString());
-            for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : values.entrySet()) {
-                ExecutableElement field = entry.getKey();
-                AnnotationValue value = entry.getValue();
-                attributeValues.put(field.getSimpleName().toString(), value.accept(converter, ""));
-            }
-            processAnnotation(extensionPointDef, attributeValues, out);
+        Map<? extends ExecutableElement, ? extends AnnotationValue> values
+                = annotationValue.getElementValues();
+        ValueConverter converter = new ValueConverter();
+        attributeValues.put("class", annotatedElement.asType().toString());
+        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : values.entrySet()) {
+            ExecutableElement field = entry.getKey();
+            AnnotationValue value = entry.getValue();
+            attributeValues.put(field.getSimpleName().toString(), value.accept(converter, ""));
         }
+        processAnnotation(extensionPointDef, attributeValues);
     }
 
     private void processAnnotatedElement(
             Element annotatedElement,
             RoundEnvironment re) throws IOException {
-        processingEnv.getMessager().printMessage(NOTE, "Processing...");
         List<? extends AnnotationMirror> annotationMirrors
                 = annotatedElement.getAnnotationMirrors();
         for (AnnotationMirror annotationValue : annotationMirrors) {
@@ -180,22 +193,112 @@ public class AnnotationProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> set, RoundEnvironment re) {
+        if (closed) {
+            return false;
+        }
         try {
-            final TypeElement[] annotations = new TypeElement[set.size()];
-            final Set<? extends Element> annotatedElements
-                    = re.getElementsAnnotatedWithAny(set.toArray(annotations));
-            for (Element annotatedElement : annotatedElements) {
-                    processAnnotatedElement(annotatedElement, re);
+            openPluginXMLFile();
+            if (!set.isEmpty()) {
+                processElements(set, re);
+            } else {
+                closePluginXMLFile();
+                mergePluginFiles();
+                closed = true;
             }
             return true;
-        } catch (IOException ex) {
+        } catch (IOException | TransformerException ex) {
             Logger.getLogger(AnnotationProcessor.class.getName()).log(Level.SEVERE, null, ex);
             return false;
         }
     }
+
+    private void processElements(
+            Set<? extends TypeElement> set,
+            RoundEnvironment re) throws IOException {
+        final TypeElement[] annotations = new TypeElement[set.size()];
+        final Set<? extends Element> annotatedElements
+                = re.getElementsAnnotatedWithAny(set.toArray(annotations));
+        for (Element annotatedElement : annotatedElements) {
+            processAnnotatedElement(annotatedElement, re);
+        }
+    }
+
+    private void openPluginXMLFile() {
+        if (tempPluginXML == null) {
+            tempPluginXML = new ByteArrayOutputStream();
+            out = new PrintWriter(tempPluginXML);
+            out.println("<?xml version=\"1.0\"?>");
+            out.println("<plugin>");
+        }
+    }
+
+    private void closePluginXMLFile() {
+        out.println("</plugin>");
+        out.close();
+    }
+
+    private void mergePluginFiles() throws IOException, TransformerException {
+
+        ByteArrayOutputStream pluginBuffer = new ByteArrayOutputStream();
+        try (
+                InputStream pluginStream = processingEnv.getFiler()
+                        .getResource(CLASS_PATH, "", "plugin.xml")
+                        .openInputStream();
+        ) {
+            IOUtil.copy(pluginStream, pluginBuffer);
+        }
+
+        try (
+                InputStream xsltStream = getClass()
+                        .getResourceAsStream("merge-plugin-files.xsl");
+
+                InputStream pluginStream =
+                        new ByteArrayInputStream(pluginBuffer.toByteArray());
+
+                OutputStream mergedStream = processingEnv.getFiler()
+                        .createResource(CLASS_OUTPUT, "", "plugin.xml")
+                        .openOutputStream()
+        ) {
+            Source xslt = new StreamSource(xsltStream);
+            Source plugin = new StreamSource(pluginStream);
+            Result merged = new StreamResult(mergedStream);
+
+            TransformerFactory factory = TransformerFactory.newInstance();
+            Transformer transformer = factory.newTransformer(xslt);
+            transformer.setURIResolver(new URIResolver() {
+                @Override
+                public Source resolve(String string, String string1) throws TransformerException {
+                    final byte[] byteArray = tempPluginXML.toByteArray();
+                    final ByteArrayInputStream inputStream
+                            = new ByteArrayInputStream(byteArray);
+                    return new StreamSource(inputStream);
+                }
+            });
+            transformer.transform(plugin, merged);
+        }
+    }
+
+    private void printStream(String xslt, InputStream xsltStream) throws IOException {
+        System.out.print("=== ");
+        System.out.print(xslt);
+        System.out.println(" =================================");
+
+
+        BufferedReader r = new BufferedReader(new InputStreamReader(xsltStream));
+        String line;
+        while ((line = r.readLine()) != null) {
+            System.out.println(line);
+        }
+        r.close();
+
+        System.out.print("=== /");
+        System.out.print(xslt);
+        System.out.println(" ================================");
+    }
 }
 
 class ValueConverter implements AnnotationValueVisitor<String, String> {
+
     @Override
     public String visit(AnnotationValue av, String p) {
         throw new UnsupportedOperationException("Not supported yet.");
