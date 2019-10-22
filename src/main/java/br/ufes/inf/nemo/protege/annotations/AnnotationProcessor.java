@@ -40,7 +40,10 @@ import javax.tools.StandardLocation;
  *
  * @author luciano
  */
-@SupportedAnnotationTypes("br.ufes.inf.nemo.protege.annotations.EditorKitMenuAction")
+@SupportedAnnotationTypes({
+    "br.ufes.inf.nemo.protege.annotations.EditorKitMenuAction",
+    "br.ufes.inf.nemo.protege.annotations.ViewComponent"
+})
 @SupportedSourceVersion(SourceVersion.RELEASE_9)
 @SupportedOptions({})
 @AutoService(Processor.class)

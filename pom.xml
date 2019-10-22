@@ -32,7 +32,7 @@
                             <checkoutDirectory>${protege.sources.targetDir}</checkoutDirectory>
                             <connectionUrl>${protege.sources.connectionUrl}</connectionUrl>
                             <branch>v5.5.0</branch>
-                            <includes>**/EditorKitMenuAction.exsd</includes>
+                            <includes>**/EditorKitMenuAction.exsd,**/ViewComponent.exsd</includes>
                         </configuration>
                     </execution>
                 </executions>
