@@ -39,7 +39,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
-import static javax.tools.StandardLocation.CLASS_PATH;
+import static javax.tools.StandardLocation.SOURCE_PATH;
 import javax.xml.transform.Result;
 import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
@@ -242,7 +242,7 @@ public class AnnotationProcessor extends AbstractProcessor {
         ByteArrayOutputStream pluginBuffer = new ByteArrayOutputStream();
         try (
                 InputStream pluginStream = processingEnv.getFiler()
-                        .getResource(CLASS_PATH, "", "plugin.xml")
+                        .getResource(CLASS_OUTPUT, "", "plugin.xml")
                         .openInputStream();
         ) {
             IOUtil.copy(pluginStream, pluginBuffer);
