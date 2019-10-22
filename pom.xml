@@ -12,8 +12,8 @@
         <xslt.generated-sources>${project.build.directory}/generated-sources/xslt</xslt.generated-sources>
         <protege.sources.connectionUrl>scm:git:https://github.com/protegeproject/protege.git</protege.sources.connectionUrl>
         <protege.sources.targetDir>${project.build.directory}/protege-sources</protege.sources.targetDir>
-        <maven.compiler.source>7</maven.compiler.source>
-        <maven.compiler.target>7</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
     <build>
         <plugins>

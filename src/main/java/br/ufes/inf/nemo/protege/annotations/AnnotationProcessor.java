@@ -56,7 +56,7 @@ import org.codehaus.plexus.util.IOUtil;
     "br.ufes.inf.nemo.protege.annotations.EditorKitMenuAction",
     "br.ufes.inf.nemo.protege.annotations.ViewComponent"
 })
-@SupportedSourceVersion(SourceVersion.RELEASE_9)
+@SupportedSourceVersion(SourceVersion.RELEASE_8)
 @SupportedOptions({})
 @AutoService(Processor.class)
 public class AnnotationProcessor extends AbstractProcessor {
