@@ -8,12 +8,10 @@ package br.ufes.inf.nemo.protege.annotations;
 import br.ufes.inf.nemo.protege.annotations.source.Attribute;
 import br.ufes.inf.nemo.protege.annotations.source.ExtensionPoint;
 import com.google.auto.service.AutoService;
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -280,24 +278,6 @@ public class AnnotationProcessor extends AbstractProcessor {
             });
             transformer.transform(plugin, merged);
         }
-    }
-
-    private void printStream(String xslt, InputStream xsltStream) throws IOException {
-        System.out.print("=== ");
-        System.out.print(xslt);
-        System.out.println(" =================================");
-
-
-        BufferedReader r = new BufferedReader(new InputStreamReader(xsltStream));
-        String line;
-        while ((line = r.readLine()) != null) {
-            System.out.println(line);
-        }
-        r.close();
-
-        System.out.print("=== /");
-        System.out.print(xslt);
-        System.out.println(" ================================");
     }
 }
 
