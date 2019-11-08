@@ -18,6 +18,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -261,10 +262,16 @@ public class AnnotationProcessor extends AbstractProcessor {
             Set<? extends TypeElement> set,
             RoundEnvironment re) throws IOException {
         final TypeElement[] annotations = new TypeElement[set.size()];
-        final Set<? extends Element> annotatedElements
-                = re.getElementsAnnotatedWithAny(set.toArray(annotations));
-        for (Element annotatedElement : annotatedElements) {
-            processAnnotatedElement(annotatedElement, re);
+        final Set<Element> visited = new HashSet<>();
+
+        for (TypeElement annotationType : set) {
+            final Set<? extends Element> annotatedElements
+                    = re.getElementsAnnotatedWith(annotationType);
+            for (Element annotatedElement : annotatedElements) {
+                if (visited.add(annotatedElement)) {
+                    processAnnotatedElement(annotatedElement, re);
+                }
+            }
         }
     }
 
@@ -399,5 +406,10 @@ class ValueConverter implements AnnotationValueVisitor<String, String> {
     @Override
     public String visitUnknown(AnnotationValue av, String p) {
         throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public String visit(AnnotationValue av) {
+        return av.accept(this, null);
     }
 }
