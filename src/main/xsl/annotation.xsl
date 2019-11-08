@@ -17,6 +17,58 @@
 
     <xsl:param name="package-name" select="''"/>
 
+    <xsl:variable name="basedOn">
+        <xsl:value-of select="
+            /xsd:schema
+                /xsd:element[@name='class']
+                    /xsd:complexType
+                        /xsd:attribute[@name='value']
+                            /xsd:annotation
+                                /xsd:appInfo
+                                    /xsd:meta.attribute/@basedOn"/>
+    </xsl:variable>
+    <xsl:variable name="simpleBasedOn">
+        <xsl:call-template name="simple-name">
+            <xsl:with-param name="name" select="$basedOn"/>
+        </xsl:call-template>
+    </xsl:variable>
+    <xsl:variable name="pluginId">
+        <xsl:choose>
+            <xsl:when test="$simpleBasedOn = 'EditorKitHook'">
+                <xsl:value-of select="$simpleBasedOn"/>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:value-of select="
+                    /xsd:schema
+                        /xsd:annotation
+                            /xsd:appInfo
+                                /xsd:meta.schema/@id"/>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:variable>
+
+    <xsl:template name="simple-name">
+        <xsl:param name="name"/>
+        <xsl:variable name="noColon" select="substring-before($name, ':')"/>
+        <xsl:variable name="simple" select="substring-after($name, '.')"/>
+        <xsl:choose>
+            <xsl:when test="$simple = ''">
+                <xsl:choose>
+                    <xsl:when test="noColon = ''">
+                        <xsl:value-of select="$name"/>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:value-of select="$noColon"/>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:call-template name="simple-name">
+                    <xsl:with-param name="name" select="$simple"/>
+                </xsl:call-template>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
     <xsl:template match="/">
         <xsl:call-template name="l">
             <xsl:with-param name="content">
@@ -91,20 +143,10 @@
             </xsl:attribute>
             <xsl:if test="@name='extension'">
                 <xsl:attribute name="x-name">
-                    <xsl:value-of select="/xsd:schema/xsd:annotation/xsd:appInfo/xsd:meta.schema/@id"/>
+                    <xsl:value-of select="$pluginId"/>
                 </xsl:attribute>
                 <xsl:attribute name="x-based-on">
-                    <xsl:for-each select="
-                            /xsd:schema
-                                /xsd:element[@name='class']
-                                    /xsd:complexType
-                                        /xsd:attribute[@name='value']
-                                            /xsd:annotation
-                                                /xsd:appInfo
-                                                    /xsd:meta.attribute/@basedOn
-                        ">
-                        <xsl:value-of select="translate(., ':', '')"/>
-                    </xsl:for-each>
+                    <xsl:value-of select="translate($basedOn, ':', '')"/>
                 </xsl:attribute>
             </xsl:if>
             <xsl:for-each select="xsd:complexType/xsd:attribute">
@@ -113,7 +155,7 @@
                         <xsl:attribute name="c-point">
                             <xsl:value-of select="/xsd:schema/xsd:annotation/xsd:appInfo/xsd:meta.schema/@plugin"/>
                             <xsl:text>.</xsl:text>
-                            <xsl:value-of select="/xsd:schema/xsd:annotation/xsd:appInfo/xsd:meta.schema/@id"/>
+                            <xsl:value-of select="$pluginId"/>
                         </xsl:attribute>
                     </xsl:when>
                     <xsl:otherwise>
