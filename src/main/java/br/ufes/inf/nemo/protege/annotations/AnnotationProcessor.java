@@ -35,6 +35,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
 import static javax.tools.StandardLocation.SOURCE_PATH;
@@ -164,9 +165,27 @@ public class AnnotationProcessor extends AbstractProcessor {
         ValueConverter converter = new ValueConverter();
         attributeValues.put("class", annotatedElement.asType().toString());
         for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : values.entrySet()) {
-            ExecutableElement field = entry.getKey();
-            AnnotationValue value = entry.getValue();
-            attributeValues.put(field.getSimpleName().toString(), value.accept(converter, ""));
+            final ExecutableElement field = entry.getKey();
+            final AnnotationValue value = entry.getValue();
+            final String stringValue = value.accept(converter, "");
+            final String fieldName = field.getSimpleName().toString();
+            attributeValues.put(fieldName, stringValue);
+        }
+        DeclaredType annotationType = annotationValue.getAnnotationType();
+
+        TypeElement typeElement = (TypeElement) annotationType.asElement();
+        for (Element enclosed : typeElement.getEnclosedElements()) {
+            if (enclosed instanceof ExecutableElement) {
+                ExecutableElement executable = (ExecutableElement) enclosed;
+                AnnotationValue defaultValue = executable.getDefaultValue();
+                if (defaultValue != null) {
+                    String fieldName = executable.getSimpleName().toString();
+                    if (!attributeValues.containsKey(fieldName)) {
+                        String stringValue = defaultValue.accept(converter, "");
+                        attributeValues.put(fieldName, stringValue);
+                    }
+                }
+            }
         }
         processAnnotation(extensionPointDef, attributeValues);
     }

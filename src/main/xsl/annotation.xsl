@@ -279,9 +279,14 @@
             </xsl:choose>
             <xsl:value-of select="name()"/>
             <xsl:text>()</xsl:text>
-            <xsl:if test="@x-min-occurs = 0">
-                <xsl:text> default ""</xsl:text>
-            </xsl:if>
+            <xsl:choose>
+                <xsl:when test="name() = 'editorKitId'">
+                    <xsl:text> default "OWLEditorKit"</xsl:text>
+                </xsl:when>
+                <xsl:when test="@x-min-occurs = 0">
+                    <xsl:text> default ""</xsl:text>
+                </xsl:when>
+            </xsl:choose>
             <xsl:text>;</xsl:text>
         </l:l>
     </xsl:template>
