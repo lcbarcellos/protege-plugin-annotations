@@ -8,10 +8,12 @@ package br.ufes.inf.nemo.protege.annotations;
 import br.ufes.inf.nemo.protege.annotations.source.Attribute;
 import br.ufes.inf.nemo.protege.annotations.source.ExtensionPoint;
 import com.google.auto.service.AutoService;
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -53,10 +55,6 @@ import org.codehaus.plexus.util.IOUtil;
  *
  * @author luciano
  */
-@SupportedAnnotationTypes({
-    "br.ufes.inf.nemo.protege.annotations.EditorKitMenuAction",
-    "br.ufes.inf.nemo.protege.annotations.ViewComponent"
-})
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 @SupportedOptions({})
 @AutoService(Processor.class)
@@ -91,6 +89,32 @@ public class AnnotationProcessor extends AbstractProcessor {
             }
         }
     }
+
+    @Override
+    public Set<String> getSupportedAnnotationTypes() {
+        try {
+            return loadSupportedAnnotationTypes();
+        } catch (IOException ex) {
+            throw new RuntimeException("Unexpected error", ex);
+        }
+    }
+
+    public Set<String> loadSupportedAnnotationTypes() throws IOException {
+        Set<String> result = new HashSet<>();
+        try (
+            InputStream is = getClass()
+                    .getResourceAsStream("supported-annotations.txt");
+            InputStreamReader isr = new InputStreamReader(is);
+            BufferedReader reader = new BufferedReader(isr);
+        ) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                result.add(line);
+            }
+        }
+        return result;
+    }
+
 
     private void processAnnotation(ExtensionPoint extensionPoint,
             Map<String, String> attributeValues) {
