@@ -16,9 +16,34 @@
         <xsl:apply-templates/>
     </xsl:template>
 
+    <xsl:template match="/plugin/comment()[
+        starts-with(., ' ## ') or
+        starts-with(preceding-sibling::node()[2]/self::comment(), ' ## ')
+    ]"/>
+
+    <xsl:template match="/plugin/text()[
+        position()=last() or
+        starts-with(following-sibling::node()[1]/self::comment(), ' ## ') or
+        starts-with(preceding-sibling::node()[1]/self::comment(), ' ## ') or
+        starts-with(preceding-sibling::node()[3]/self::comment(), ' ## ')
+    ]"/>
+
+    <xsl:template match="/plugin/*[
+        starts-with(preceding-sibling::node()[4]/self::comment(), ' ## ')
+    ]"/>
+
     <xsl:template match="node()|@*">
         <xsl:copy>
             <xsl:apply-templates select="node()|@*"/>
+        </xsl:copy>
+    </xsl:template>
+
+    <xsl:template match="/plugin/*" mode="final">
+        <xsl:text>&#xa;&#xa;    </xsl:text>
+        <xsl:comment><xsl:value-of select="concat(' ## ', @id, ' ')"/></xsl:comment>
+        <xsl:copy-of select="preceding-sibling::node()[position() &lt; 4]"/>
+        <xsl:copy>
+            <xsl:apply-templates select="node()|@*" mode="final"/>
         </xsl:copy>
     </xsl:template>
 
@@ -31,8 +56,8 @@
     <xsl:template match="/plugin">
         <xsl:copy>
             <xsl:apply-templates select="node()|@*"/>
-            <xsl:apply-templates
-                select="document('plugin.xml')/plugin/node()" mode="final"/>
+            <xsl:apply-templates select="document('plugin.xml')/plugin/*" mode="final"/>
+            <xsl:text>&#xa;</xsl:text>
         </xsl:copy>
     </xsl:template>
 </xsl:stylesheet>
